@@ -1,0 +1,19 @@
+RewriteEngine On
+
+ErrorDocument 404 /pages/errors/404.php
+ErrorDocument 500 /pages/errors/500.php
+
+# RewriteRule ^$ - [L]
+
+
+# Menghilangkan ekstensi .php pada URL
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^(.+)$ $1.php [L,QSA]
+
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteCond %{SCRIPT_FILENAME} !-d
+RewriteRule ^([^.]+)$ $1.php [NC,L,QSA]
+
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI}.php -f [L,R=301]
+# RewriteRule ^([^.]+)$ $1.php [NC,L,QSA]
