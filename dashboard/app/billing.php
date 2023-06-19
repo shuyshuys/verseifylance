@@ -771,7 +771,7 @@ if (isset($_GET['serviceID'])) {
                                         <?php
                                             }
                                             ?>
-                                            <button type="button" class="btn btn-secondary ms-2">Print</button>
+                                            <a href="../../reportpdf.php?report=<?php echo $report ?>" class="btn btn-primary px-3 py-2">Print</a>
                                         <?php
                                         }
                                         ?>

@@ -12,7 +12,8 @@ $userID = $_SESSION['user']['ID_USER'];
 $query = "SELECT ID_CUSTOMER FROM customers WHERE ID_USER = '$userID'";
 $result = mysqli_query($koneksi, $query);
 $customerID = mysqli_fetch_assoc($result)['ID_CUSTOMER'];
-
+// $freelancerID = '';
+// $serviceID = '';
 
 // terima harga dari get, gunakan isset untuk $serviceID = $_GET['serviceID'];
 if (isset($_GET['serviceID'])) {
@@ -29,11 +30,15 @@ if (isset($_GET['serviceID'])) {
 // set isset for $orders = $_GET['orders'];
 if (isset($_GET['orders'])) {
     $orders = $_GET['orders']; // id service
-    $method = $_GET['method']; // method
+    $method = 'cash'; // method
+    // get price from services
+    $query = "SELECT PRICE FROM services WHERE ID_SERVICE = '$orders'";
+    $hasil = mysqli_query($koneksi, $query);
+    $price = mysqli_fetch_assoc($hasil)['PRICE'];
     
     // query insert data to payments
     $query = "INSERT INTO payments (method, AMOUNT, TAX, DISCOUNT, STATUS, TOTAL_AMOUNT)
-    values ('$method', '$price', 0, 0, 1, $price);";
+    values ('$method', '$price', 0, 0, 0, $price);";
     $hasil = mysqli_query($koneksi, $query);
     // get last insert id from payments
     $payment = mysqli_insert_id($koneksi);
@@ -44,10 +49,6 @@ if (isset($_GET['orders'])) {
     // get last insert id from orders
     $orderID = mysqli_insert_id($koneksi);
     
-    // get price from services
-    $query = "SELECT PRICE FROM services WHERE ID_SERVICE = '$orders'";
-    $hasil = mysqli_query($koneksi, $query);
-    $price = mysqli_fetch_assoc($hasil)['PRICE'];
     
     // cek hasil
     if ($hasil) {
