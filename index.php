@@ -109,7 +109,14 @@ WHERE u.ID_USER=" . $_SESSION['user']['ID_USER'] . "";
                             </form>
                         </div>
                         <div class="ms-3 lh-1">
-                            <a class="bg-white btn btn-light d-flex" target="_blank" href="https://github.com/shuyshuys/verseifylance"><img src="./assets/images/brands/23.png" width="24px" height="24px"><span class="mx-2 text-danger fw-bold">STAR US</span> <span>ON GITHUB</span></a>
+                            <a class="d-flex github-button" target="_blank" href="https://github.com/shuyshuys/verseifylance"
+                            data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star shuyshuys/verseifylance on GitHub"
+                            >
+                                <img src="./assets/images/brands/23.png" width="24px" height="24px">
+                                <span class="mx-2 text-danger fw-bold">
+                                    STAR US</span>
+                                <span>ON GITHUB</span>
+                            </a>
                         </div>
                     </div>
 
@@ -150,7 +157,7 @@ WHERE u.ID_USER=" . $_SESSION['user']['ID_USER'] . "";
                             <span class="navbar-toggler-icon"></span>
                         </button>
                         <div class="collapse navbar-collapse" id="navbar-2">
-                            <ul class="mb-2 navbar-nav ms-auto mb-lg-0 d-flex align-items-start">
+                            <ul class="mb-2 navbar-nav ms-auto mb-lg-0 d-flex align-items-start align-items-center">
                                 <li class="nav-item">
                                     <a class="nav-link" aria-current="page" href="#" target="">Home</a>
                                 </li>
@@ -159,9 +166,6 @@ WHERE u.ID_USER=" . $_SESSION['user']['ID_USER'] . "";
                                 </li>
                                 <li class="nav-item me-3">
                                     <a class="nav-link" aria-current="page" href="#faq" target="">FAQ</a>
-                                </li>
-                                <li class="nav-item me-3">
-                                    <a class="github-button" href="https://github.com/shuyshuys/sneat-aw" data-icon="octicon-star" data-size="large" data-show-count="true" aria-label="Star shuyshuys/sneat-aw on GitHub">Star</a>
                                 </li>
                                 <?php
                                 if (!isset($_SESSION['user'])) {
