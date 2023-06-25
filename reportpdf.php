@@ -27,7 +27,7 @@ join services s on s.ID_SERVICE = o.ID_SERVICE
 join freelancers f on f.ID_FREELANCER = s.ID_FREELANCER 
 join customers c on c.ID_CUSTOMER = o.ID_CUSTOMER 
 join payments p on p.ID_PAYMENT = o.ID_PAYMENT
-WHERE o.ID_CUSTOMER = " . $_GET['report'] . " AND o.STATUS = '1'
+WHERE o.ID_CUSTOMER = " . $_GET['report'] . "
 GROUP BY o.ID_ORDER;";
 
 $query = mysqli_query($koneksi, $qwr);

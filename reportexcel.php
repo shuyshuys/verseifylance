@@ -22,6 +22,8 @@ $sheet->setCellValue('L1', 'Tax');
 $sheet->setCellValue('M1', 'Discount');
 $sheet->setCellValue('N1', 'Total Amount');
 
+// get freelancerid from get
+$freelancerid = $_GET['freelancerid'];
 
 $sql = "SELECT o.ID_ORDER, o.CREATED_AT,
 c.FULL_NAME as CUSTOMER_NAME, 
@@ -39,6 +41,7 @@ join services s on s.ID_SERVICE = o.ID_SERVICE
 join freelancers f on f.ID_FREELANCER = s.ID_FREELANCER 
 join customers c on c.ID_CUSTOMER = o.ID_CUSTOMER 
 join payments p on p.ID_PAYMENT = o.ID_PAYMENT
+WHERE f.ID_FREELANCER = $freelancerid
 GROUP BY o.ID_ORDER;";
 
 $query = mysqli_query($koneksi, $sql);
