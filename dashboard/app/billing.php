@@ -1,6 +1,7 @@
 <?php
 include_once '../../pages/auth/auth.php';
 include_once '../../pages/auth/koneksi.php';
+include_once '../../assets/alert.php';
 
 if (!is_authenticated()) {
     header('Location: ../../pages/auth/sign-in');
@@ -8,12 +9,10 @@ if (!is_authenticated()) {
 }
 
 $customerID = $_SESSION['user']['ID_CUSTOMER'];
-// echo "<pre>";
-// echo print_r($_SESSION['user']);
-// echo "</pre>";
+
 // ambil dari orders
 $query = "SELECT o.ID_ORDER, o.ID_PAYMENT,
-p.STATUS,
+o.STATUS,
 c.FULL_NAME as CUSTOMER_NAME, 
 f.FULL_NAME as FREELANCER_NAME, 
 COUNT(o.ID_ORDER) as QTY,
@@ -26,40 +25,40 @@ join services s on s.ID_SERVICE = o.ID_SERVICE
 join freelancers f on f.ID_FREELANCER = s.ID_FREELANCER 
 join customers c on c.ID_CUSTOMER = o.ID_CUSTOMER 
 left join payments p on p.ID_PAYMENT = o.ID_PAYMENT
-WHERE o.ID_CUSTOMER = " . $customerID . " AND o.STATUS = '0'
+WHERE o.ID_CUSTOMER = " . $customerID . " AND o.STATUS = '0' AND o.ID_PAYMENT is NULL
 GROUP BY o.ID_ORDER;";
 
 $hasil = mysqli_query($koneksi, $query);
 $orders = mysqli_fetch_all($hasil, MYSQLI_ASSOC);
 
-// isset get pay
-if (isset($_GET['pay'])) {
-    $orderID = $_GET['pay'];
-    $query = "UPDATE payments SET STATUS = '1' WHERE ID_ORDER = " . $orderID . ";";
-    $hasil = mysqli_query($koneksi, $query);
-    header('Location: ../../dashboard/app/billing.php');
-    exit;
-}
-
 // isset serviceID
 if (isset($_GET['serviceID'])) {
     $serviceID = $_GET['serviceID'];
+    $method = $_GET['paymentMethod'];
+    $ordersID = $_GET['orderID'];
+    $totalBayar = $_GET['totalBayar'];
 
-    // $serviceIDs akan berisi array yang sama seperti yang Anda lempar melalui URL
-    print_r($serviceID);
-    // buatkan perulangan untuk memperbarui payments set status = 1 jika serviceid = $serviceID
     foreach ($serviceID as $id) {
-        $query = "UPDATE orders SET STATUS = '1' WHERE ID_PAYMENT = " . $id . ";";
+        // query insert data to payments
+        $query = "INSERT INTO payments (PAYMENT_DATE, method, AMOUNT, TAX, DISCOUNT, STATUS, TOTAL_AMOUNT)
+        values (CURDATE(), '$method', '$totalBayar', 0, 0, 1, $totalBayar);";
         $hasil = mysqli_query($koneksi, $query);
+        $paymentid = mysqli_insert_id($koneksi);
 
-        $query = "UPDATE payments SET PAYMENT_DATE = CURDATE(), STATUS = '1', METHOD = 'cash' WHERE ID_PAYMENT = " . $id . ";";
-        $hasil = mysqli_query($koneksi, $query);
-        // alert success or failed
-    }
-    if ($hasil) {
-        echo "<script>alert('Payment Success!');</script>";
-    } else {
-        echo "<script>alert('Payment Failed!');</script>";
+        echo $paymentid;
+
+        foreach ($ordersID as $idorder) {
+            echo $idorder;
+            $query = "UPDATE orders SET ID_PAYMENT= $paymentid WHERE ID_ORDER = $idorder";
+            $hasil = mysqli_query($koneksi, $query);
+            $hasil = mysqli_insert_id($koneksi);
+            echo $hasil;
+        }
+        
+        $_SESSION['status'] = 'success';
+        $_SESSION['message'] = 'Payment Success!';
+        $_SESSION['icon'] = 'check-circle-fill';
+        header('Location: ./billing');
     }
 }
 ?>
@@ -94,7 +93,12 @@ if (isset($_GET['serviceID'])) {
     <!-- RTL Css -->
     <link rel="stylesheet" href="../../assets/css/rtl.min.css" />
 
-
+    <style>
+        ::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+    </style>
 </head>
 
 <body class="  ">
@@ -149,70 +153,6 @@ if (isset($_GET['serviceID'])) {
             <div class="sidebar-list">
                 <!-- Sidebar Menu Start -->
                 <ul class="navbar-nav iq-main-menu" id="sidebar-menu">
-                    <li class="nav-item static-item">
-                        <a class="nav-link static-item disabled" href="#" tabindex="-1">
-                            <span class="default-icon">Home</span>
-                            <span class="mini-icon">-</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" aria-current="page" href="../../dashboard/index.html">
-                            <i class="icon">
-                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-20">
-                                    <path opacity="0.4" d="M16.0756 2H19.4616C20.8639 2 22.0001 3.14585 22.0001 4.55996V7.97452C22.0001 9.38864 20.8639 10.5345 19.4616 10.5345H16.0756C14.6734 10.5345 13.5371 9.38864 13.5371 7.97452V4.55996C13.5371 3.14585 14.6734 2 16.0756 2Z" fill="currentColor"></path>
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.53852 2H7.92449C9.32676 2 10.463 3.14585 10.463 4.55996V7.97452C10.463 9.38864 9.32676 10.5345 7.92449 10.5345H4.53852C3.13626 10.5345 2 9.38864 2 7.97452V4.55996C2 3.14585 3.13626 2 4.53852 2ZM4.53852 13.4655H7.92449C9.32676 13.4655 10.463 14.6114 10.463 16.0255V19.44C10.463 20.8532 9.32676 22 7.92449 22H4.53852C3.13626 22 2 20.8532 2 19.44V16.0255C2 14.6114 3.13626 13.4655 4.53852 13.4655ZM19.4615 13.4655H16.0755C14.6732 13.4655 13.537 14.6114 13.537 16.0255V19.44C13.537 20.8532 14.6732 22 16.0755 22H19.4615C20.8637 22 22 20.8532 22 19.44V16.0255C22 14.6114 20.8637 13.4655 19.4615 13.4655Z" fill="currentColor"></path>
-                                </svg>
-                            </i>
-                            <span class="item-name">Dashboard</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="collapse" href="#horizontal-menu" role="button" aria-expanded="false" aria-controls="horizontal-menu">
-                            <i class="icon">
-
-                                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-20">
-                                    <path opacity="0.4" d="M10.0833 15.958H3.50777C2.67555 15.958 2 16.6217 2 17.4393C2 18.2559 2.67555 18.9207 3.50777 18.9207H10.0833C10.9155 18.9207 11.5911 18.2559 11.5911 17.4393C11.5911 16.6217 10.9155 15.958 10.0833 15.958Z" fill="currentColor"></path>
-                                    <path opacity="0.4" d="M22.0001 6.37867C22.0001 5.56214 21.3246 4.89844 20.4934 4.89844H13.9179C13.0857 4.89844 12.4102 5.56214 12.4102 6.37867C12.4102 7.1963 13.0857 7.86 13.9179 7.86H20.4934C21.3246 7.86 22.0001 7.1963 22.0001 6.37867Z" fill="currentColor"></path>
-                                    <path d="M8.87774 6.37856C8.87774 8.24523 7.33886 9.75821 5.43887 9.75821C3.53999 9.75821 2 8.24523 2 6.37856C2 4.51298 3.53999 3 5.43887 3C7.33886 3 8.87774 4.51298 8.87774 6.37856Z" fill="currentColor"></path>
-                                    <path d="M21.9998 17.3992C21.9998 19.2648 20.4609 20.7777 18.5609 20.7777C16.6621 20.7777 15.1221 19.2648 15.1221 17.3992C15.1221 15.5325 16.6621 14.0195 18.5609 14.0195C20.4609 14.0195 21.9998 15.5325 21.9998 17.3992Z" fill="currentColor"></path>
-                                </svg>
-                            </i>
-                            <span class="item-name">Services</span>
-                            <i class="right-icon">
-                                <svg class="icon-18" xmlns="http://www.w3.org/2000/svg" width="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </i>
-                        </a>
-                        <ul class="sub-nav collapse" id="horizontal-menu" data-bs-parent="#sidebar-menu">
-                            <li class="nav-item">
-                                <a class="nav-link " href="../../dashboard/app/services">
-                                    <i class="icon">
-                                        <svg class="icon-10" xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
-                                            <g>
-                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
-                                            </g>
-                                        </svg>
-                                    </i>
-                                    <i class="sidenav-mini-icon"> H </i>
-                                    <span class="item-name"> List Service </span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link " href="../../dashboard/app/add-service">
-                                    <i class="icon">
-                                        <svg class="icon-10" xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
-                                            <g>
-                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
-                                            </g>
-                                        </svg>
-                                    </i>
-                                    <i class="sidenav-mini-icon"> H </i>
-                                    <span class="item-name"> Add New </span>
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
                     <li>
                         <hr class="hr-horizontal">
                     </li>
@@ -238,6 +178,19 @@ if (isset($_GET['serviceID'])) {
                             </i>
                         </a>
                         <ul class="sub-nav collapse" id="sidebar-special" data-bs-parent="#sidebar-menu">
+                        <li class="nav-item">
+                                <a class="nav-link" href="./orders">
+                                    <i class="icon">
+                                        <svg class="icon-10" xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
+                                            <g>
+                                                <circle cx="12" cy="12" r="8" fill="currentColor"></circle>
+                                            </g>
+                                        </svg>
+                                    </i>
+                                    <i class="sidenav-mini-icon"> O </i>
+                                    <span class="item-name">Orders</span>
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link active" href="#">
                                     <i class="icon">
@@ -626,13 +579,16 @@ if (isset($_GET['serviceID'])) {
                                     <p>We are on a mission to help customer like you build successful projects with cheaper price.</p>
                                 </div>
                                 <div>
-                                    <a href="" class="btn btn-link btn-soft-light">
-                                        <svg class="icon-20" width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M11.8251 15.2171H12.1748C14.0987 15.2171 15.731 13.985 16.3054 12.2764C16.3887 12.0276 16.1979 11.7713 15.9334 11.7713H14.8562C14.5133 11.7713 14.2362 11.4977 14.2362 11.16C14.2362 10.8213 14.5133 10.5467 14.8562 10.5467H15.9005C16.2463 10.5467 16.5263 10.2703 16.5263 9.92875C16.5263 9.58722 16.2463 9.31075 15.9005 9.31075H14.8562C14.5133 9.31075 14.2362 9.03619 14.2362 8.69849C14.2362 8.35984 14.5133 8.08528 14.8562 8.08528H15.9005C16.2463 8.08528 16.5263 7.8088 16.5263 7.46728C16.5263 7.12575 16.2463 6.84928 15.9005 6.84928H14.8562C14.5133 6.84928 14.2362 6.57472 14.2362 6.23606C14.2362 5.89837 14.5133 5.62381 14.8562 5.62381H15.9886C16.2483 5.62381 16.4343 5.3789 16.3645 5.13113C15.8501 3.32401 14.1694 2 12.1748 2H11.8251C9.42172 2 7.47363 3.92287 7.47363 6.29729V10.9198C7.47363 13.2933 9.42172 15.2171 11.8251 15.2171Z" fill="currentColor"></path>
-                                            <path opacity="0.4" d="M19.5313 9.82568C18.9966 9.82568 18.5626 10.2533 18.5626 10.7823C18.5626 14.3554 15.6186 17.2627 12.0005 17.2627C8.38136 17.2627 5.43743 14.3554 5.43743 10.7823C5.43743 10.2533 5.00345 9.82568 4.46872 9.82568C3.93398 9.82568 3.5 10.2533 3.5 10.7823C3.5 15.0873 6.79945 18.6413 11.0318 19.1186V21.0434C11.0318 21.5715 11.4648 22.0001 12.0005 22.0001C12.5352 22.0001 12.9692 21.5715 12.9692 21.0434V19.1186C17.2006 18.6413 20.5 15.0873 20.5 10.7823C20.5 10.2533 20.066 9.82568 19.5313 9.82568Z" fill="currentColor"></path>
-                                        </svg>
-                                        Announcements
-                                    </a>
+                                    <!-- print alert from session status and message if exist -->
+
+                                    <?php
+                                    if (isset($_SESSION['status']) && isset($_SESSION['message'])) :
+                                        AlertMessage::displayAlert($_SESSION['status'], $_SESSION['message'], $_SESSION['icon']);
+                                    endif;
+                                    unset($_SESSION['status']);
+                                    unset($_SESSION['message']);
+                                    unset($_SESSION['icon']);
+                                    ?>
                                 </div>
                             </div>
                         </div>
@@ -666,14 +622,15 @@ if (isset($_GET['serviceID'])) {
                                     // jika orders tidak kosong
                                     if (!empty($orders)) {
                                     ?>
-                                        <div class="table-responsive-lg">
+                                        <div class="table-responsive">
                                             <h4 class="mb-3">Order Details</h4>
                                             <!-- <h6 class="mb-3">Freelancer: <?php echo $orders[0]['FREELANCER_NAME'] ?></h6>
                                         <h6 class="mb-3">Created at: <?php echo $orders[0]['CREATED_AT'] ?></h6> -->
-                                            <table class="table">
+                                            <table class="table  table-bordered">
                                                 <thead>
                                                     <tr>
                                                         <!-- <th scope="col">Invoice</th> -->
+                                                        <th class="col">Action</th>
                                                         <th scope="col">Invoice /<br>Date Purchase</th>
                                                         <th scope="col">Item</th>
                                                         <th scope="col">Freelancer</th>
@@ -687,18 +644,22 @@ if (isset($_GET['serviceID'])) {
                                                     $totalBayar = 0;
                                                     $i = 0;
                                                     $serviceID = array();
+                                                    $ordersID = array();
                                                     foreach ($orders as $order) {
                                                         $totalBayar += $order['PRICE'];
                                                     ?>
 
                                                         <tr>
-                                                                <td>
+                                                            <td>
+                                                                <a href="cancel?orderid=<?php echo $order['ID_ORDER'] ?>" class="btn btn-danger">X</a>
+                                                            </td>
+                                                            <td>
                                                                 <h6 class="mb-0">#<?php echo $order['ID_ORDER'] ?></h6>
                                                                 <h6 class="mb-0"><?php echo $order['CREATED_AT'] ?></h6>
                                                             </td>
                                                             <td>
                                                                 <h6 class="mb-0"><?php echo $order['TITLE'] ?></h6>
-                                                                <p class="mb-0"><?php echo $order['DESCRIPTION'] ?></p>
+                                                                <p class="mb-0" style="max-width: 400px; overflow:scroll;"><?php echo $order['DESCRIPTION'] ?></p>
                                                             </td>
                                                             <td>
                                                                 <h6 class="mb-0"><?php echo $orders[$i]['FREELANCER_NAME'] ?></h6>
@@ -707,11 +668,13 @@ if (isset($_GET['serviceID'])) {
                                                             <td class="text-center">Rp.<?php echo $order['PRICE'] ?></td>
                                                         </tr>
                                                     <?php
-                                                        $serviceID[$i] = $order['ID_PAYMENT'];
+                                                        $serviceID[$i] = $order['ID_SERVICE'];
+                                                        $ordersID[$i] = $order['ID_ORDER'];
                                                         $i++;
                                                     }
                                                     ?>
                                                     <tr>
+                                                        <td class="text-center"></td>
                                                         <td>
                                                             <h6 class="mb-0">Total</h6>
                                                         </td>
@@ -721,6 +684,8 @@ if (isset($_GET['serviceID'])) {
                                                         <td class="text-center">Rp.<?php echo $totalBayar ?></td>
                                                     </tr>
                                                     <tr>
+                                                        <td class="text-center"></td>
+
                                                         <td>
                                                             <h6 class="mb-0">Taxs</h6>
                                                         </td>
@@ -730,6 +695,8 @@ if (isset($_GET['serviceID'])) {
                                                         <td class="text-center">Rp.0.00</td>
                                                     </tr>
                                                     <tr>
+                                                        <td class="text-center"></td>
+
                                                         <td>
                                                             <h6 class="mb-0">Discount</h6>
                                                         </td>
@@ -739,6 +706,8 @@ if (isset($_GET['serviceID'])) {
                                                         <td class="text-center">Rp.0.00</td>
                                                     </tr>
                                                     <tr>
+                                                        <td class="text-center"></td>
+
                                                         <td>
                                                             <h6 class="mb-0">Net Amount</h6>
                                                         </td>
@@ -764,14 +733,38 @@ if (isset($_GET['serviceID'])) {
                                         <?php
                                         if (!empty($orders)) {
                                             if ($orders[0]['STATUS'] == 0) {
-                                                $url = './billing.php?' . http_build_query(['serviceID' => $serviceID]);
-
+                                                $url = './billing.php?' . http_build_query(['serviceID' => $serviceID]) . '&' . http_build_query(['orderID' => $ordersID]) . '&' . http_build_query(['totalBayar' => $totalBayar]);
+                                            //  $url .= '&' . http_build_query(['orderID' => $ordersID]);
+                                            //  $url .= '&' . http_build_query(['totalBayar' => $totalBayar]);
+                                                // Assuming you have an array of payment methods, e.g., $paymentMethods
+                                                $paymentMethods = ["Select payment", "Cash", "Bank Transfer", "E-Money"];
                                         ?>
-                                                <a href="<?php echo $url; ?>" class="btn btn-primary px-3 py-2">Pay Now</a>
-                                        <?php
+                                                <select name="paymentMethod" id="paymentMethod" class="me-3">
+                                                    <?php
+                                                    foreach ($paymentMethods as $method) {
+                                                        echo "<option value='$method'>$method</option>";
+                                                    }
+                                                    ?>
+                                                </select>
+                                                <!-- <a href="<?php //echo $url; ?>" class="btn btn-primary px-3 py-2 me-3">Pay Now</a> -->
+                                                <a href="javascript:void(0);" class="btn btn-primary px-3 py-2 me-3" onclick="payNow()">Pay Now</a>
+
+                                                <script>
+                                                    function payNow() {
+                                                        // Get the selected payment method
+                                                        var paymentMethod = document.getElementById('paymentMethod').value;
+
+                                                        // Append the payment method to the URL
+                                                        var urlWithPaymentMethod = "<?php echo $url; ?>&paymentMethod=" + encodeURIComponent(paymentMethod);
+
+                                                        // Redirect to the updated URL
+                                                        window.location.href = urlWithPaymentMethod;
+                                                    }
+                                                </script>
+                                            <?php
                                             }
                                             ?>
-                                            <a href="../../reportpdf.php?report=<?php echo $report ?>" class="btn btn-primary px-3 py-2">Print</a>
+                                            <a href="../../reportpdf.php?report=<?php echo $report ?>" class="btn btn-info px-3 py-2">Print</a>
                                         <?php
                                         }
                                         ?>

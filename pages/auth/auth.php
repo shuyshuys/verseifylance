@@ -39,7 +39,7 @@ function authenticate($email, $password)
         // Jika email dan password cocok, simpan data user ke dalam sesi
         $_SESSION['user'] = $hasiluser;
         // Check if the user is a freelancer or customer and if their full name is empty
-        if ($hasiluser['ROLE'] == 'freelancers' && empty($hasiluser['BIO'])) {
+        if ($hasiluser['ROLE'] == 'freelancers' && empty($hasiluser['BIO']) && empty($hasiluser['SPECIALIZATION'])) {
             header('Location: ../../dashboard/form/form-wizard.php');
             exit();
         }

@@ -6,18 +6,18 @@ if (!is_authenticated()) {
     header("Location: ../../pages/auth/sign-in");
     exit();
 }
-$user = $_SESSION['user'];
+$userID = $_SESSION['user']['ID_USER'];
 
-$userID = $user['ID_USER'];
 $queryFreelancerID = "SELECT id_freelancer FROM freelancers WHERE id_user = '$userID'";
 $resultFreelancerID = mysqli_query($koneksi, $queryFreelancerID);
 $freelancerID = mysqli_fetch_assoc($resultFreelancerID)['id_freelancer'];
 
-$query = "SELECT FULL_NAME, SPECIALIZATION FROM freelancers WHERE id_freelancer = '$freelancerID'";
+$query = "SELECT FULL_NAME, SPECIALIZATION, PROFILE_PIC_URL FROM freelancers WHERE id_freelancer = '$freelancerID'";
 $result = mysqli_query($koneksi, $query);
 $freelancer = mysqli_fetch_assoc($result);
 $freelancerName = $freelancer['FULL_NAME'];
 $freelancerSpecialization = $freelancer['SPECIALIZATION'];
+$fileName = $freelancer['PROFILE_PIC_URL'];
 
 if (!isset($_SESSION['user']['FULL_NAME'])) {
     $_SESSION['user']['FULL_NAME'] = $freelancerName;
@@ -28,19 +28,33 @@ FROM payments p
 JOIN orders o ON o.ID_PAYMENT = p.ID_PAYMENT
 JOIN services s ON s.ID_SERVICE = o.ID_SERVICE
 JOIN freelancers f ON f.ID_FREELANCER = s.ID_FREELANCER
-WHERE f.ID_FREELANCER = '$freelancerID';";
+WHERE f.ID_FREELANCER = '$freelancerID' AND MONTH(o.CREATED_AT) = MONTH(CURRENT_DATE()) AND YEAR(o.CREATED_AT) = YEAR(CURRENT_DATE());";
 $result = mysqli_query($koneksi, $query);
 $income = mysqli_fetch_assoc($result)['TOTAL_AMOUNT'];
 $number = $income;
 $income = number_format($number, 0, '.', ',');
 
+$query = "SELECT SUM(p.TOTAL_AMOUNT) AS TOTAL_AMOUNT
+FROM payments p
+JOIN orders o ON o.ID_PAYMENT = p.ID_PAYMENT
+JOIN services s ON s.ID_SERVICE = o.ID_SERVICE
+JOIN freelancers f ON f.ID_FREELANCER = s.ID_FREELANCER
+WHERE f.ID_FREELANCER = '$freelancerID';";
+$result = mysqli_query($koneksi, $query);
+$totalsales = mysqli_fetch_assoc($result)['TOTAL_AMOUNT'];
+$totalsales = number_format($totalsales, 0, '.', ',');
+
 $query = "SELECT COUNT(ID_SERVICE) AS TOTAL_SERVICE FROM services WHERE ID_FREELANCER = '$freelancerID';";
 $result = mysqli_query($koneksi, $query);
 $services = mysqli_fetch_assoc($result)['TOTAL_SERVICE'];
 
-$query = "SELECT COUNT(ID_ORDER) AS TOTAL_ORDER FROM orders o JOIN services s ON o.ID_SERVICE = s.ID_SERVICE WHERE ID_FREELANCER = '$freelancerID';";
+$query = "SELECT COUNT(ID_ORDER) AS TOTAL_ORDER FROM orders o JOIN services s ON o.ID_SERVICE = s.ID_SERVICE WHERE ID_FREELANCER = '$freelancerID' AND MONTH(o.CREATED_AT) = MONTH(CURRENT_DATE()) AND YEAR(o.CREATED_AT) = YEAR(CURRENT_DATE());";
 $result = mysqli_query($koneksi, $query);
 $orders = mysqli_fetch_assoc($result)['TOTAL_ORDER'];
+
+$query = "SELECT COUNT(ID_ORDER) AS TOTAL_ORDER FROM orders o JOIN services s ON o.ID_SERVICE = s.ID_SERVICE WHERE ID_FREELANCER = '$freelancerID';";
+$result = mysqli_query($koneksi, $query);
+$totalorders = mysqli_fetch_assoc($result)['TOTAL_ORDER'];
 
 $query = "SELECT IFNULL(SUM(p.TOTAL_AMOUNT), 0) AS TOTAL_AMOUNT
 FROM payments p
@@ -53,14 +67,18 @@ $todayIncome = mysqli_fetch_assoc($result)['TOTAL_AMOUNT'];
 // $number = $todayIncome;
 $todayIncome = number_format($todayIncome, 0, '.', ',');
 
-$query = "select count(distinct(ID_CUSTOMER))
-from orders;";
+$query = "SELECT count(distinct(ID_CUSTOMER))
+FROM orders o
+JOIN services s ON s.ID_SERVICE = o.ID_SERVICE 
+JOIN freelancers f ON f.ID_FREELANCER = s.ID_FREELANCER
+WHERE f.ID_FREELANCER = '$freelancerID';";
 $result = mysqli_query($koneksi, $query);
 $lifetimeCustomer = mysqli_fetch_assoc($result)['count(distinct(ID_CUSTOMER))'];
 
 $query = "SELECT COUNT(ID_CUSTOMER) AS MonthlyCustomers
-FROM orders
-WHERE MONTH(CREATED_AT) = MONTH(CURDATE()) AND YEAR(CREATED_AT) = YEAR(CURDATE());";
+FROM orders o
+JOIN services s ON s.ID_SERVICE = o.ID_SERVICE
+WHERE MONTH(o.CREATED_AT) = MONTH(CURDATE()) AND YEAR(o.CREATED_AT) = YEAR(CURDATE()) AND ID_FREELANCER='$freelancerID';";
 $result = mysqli_query($koneksi, $query);
 $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
 ?>
@@ -235,7 +253,7 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                         </a>
                         <ul class="sub-nav collapse" id="utilities-error" data-bs-parent="#sidebar-menu">
                             <li class="nav-item">
-                                <a class="nav-link " href="../../reportpdf.php">
+                                <a class="nav-link " href="../../reportpdf-freelancer.php?freelancerid=<?php echo $freelancerID?>">
                                     <i class="icon">
                                         <svg class="icon-10" xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
@@ -247,7 +265,7 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link " href="../../reportexcel.php">
+                                <a class="nav-link " href="../../reportexcel?freelancerid=<?php echo $freelancerID?>">
                                     <i class="icon">
                                         <svg class="icon-10" xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24" fill="currentColor">
                                             <g>
@@ -566,7 +584,7 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                             </li>
                             <li class="nav-item dropdown">
                                 <a class="py-0 nav-link d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <img src="../../assets/images/avatars/01.png" alt="User-Profile" class="theme-color-default-img img-fluid avatar avatar-50 avatar-rounded">
+                                    <img src="../../uploads/<?php echo $fileName ?>" alt="User-Profile" class="theme-color-default-img img-fluid avatar avatar-50 avatar-rounded">
                                     <img src="../../assets/images/avatars/avtar_1.png" alt="User-Profile" class="theme-color-purple-img img-fluid avatar avatar-50 avatar-rounded">
                                     <img src="../../assets/images/avatars/avtar_2.png" alt="User-Profile" class="theme-color-blue-img img-fluid avatar avatar-50 avatar-rounded">
                                     <img src="../../assets/images/avatars/avtar_4.png" alt="User-Profile" class="theme-color-green-img img-fluid avatar avatar-50 avatar-rounded">
@@ -651,8 +669,23 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                                 </svg>
                                             </div>
                                             <div class="progress-detail">
-                                                <p class="mb-2">Total Sales</p>
+                                                <p class="mb-2">Monthly Sales</p>
                                                 <h4 class="counter">Rp<?php echo $income ?></h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li class="swiper-slide card card-slide" data-aos="fade-up" data-aos-delay="900">
+                                    <div class="card-body">
+                                        <div class="progress-widget">
+                                            <div id="circle-progress-03" class="text-center circle-progress-01 circle-progress circle-progress-primary" data-min-value="0" data-max-value="100" data-value="70" data-type="percent">
+                                                <svg class="card-slie-arrow icon-24" width="24" viewBox="0 0 24 24">
+                                                    <path fill="currentColor" d="M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z" />
+                                                </svg>
+                                            </div>
+                                            <div class="progress-detail">
+                                                <p class="mb-2">Monthly Orders</p>
+                                                <h4 class="counter"><?php echo $orders ?> order</h4>
                                             </div>
                                         </div>
                                     </div>
@@ -672,17 +705,17 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                         </div>
                                     </div>
                                 </li>
-                                <li class="swiper-slide card card-slide" data-aos="fade-up" data-aos-delay="900">
+                                <li class="swiper-slide card card-slide" data-aos="fade-up" data-aos-delay="1300">
                                     <div class="card-body">
                                         <div class="progress-widget">
-                                            <div id="circle-progress-03" class="text-center circle-progress-01 circle-progress circle-progress-primary" data-min-value="0" data-max-value="100" data-value="70" data-type="percent">
-                                                <svg class="card-slie-arrow icon-24" width="24" viewBox="0 0 24 24">
+                                            <div id="circle-progress-07" class="text-center circle-progress-01 circle-progress circle-progress-primary" data-min-value="0" data-max-value="100" data-value="30" data-type="percent">
+                                                <svg class="card-slie-arrow icon-24 " width="24" viewBox="0 0 24 24">
                                                     <path fill="currentColor" d="M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z" />
                                                 </svg>
                                             </div>
                                             <div class="progress-detail">
-                                                <p class="mb-2">Total Orders</p>
-                                                <h4 class="counter"><?php echo $orders ?> order</h4>
+                                                <p class="mb-2">Lifetime Customer</p>
+                                                <h4 class="counter"><?php echo $lifetimeCustomer; ?></h4>
                                             </div>
                                         </div>
                                     </div>
@@ -702,21 +735,6 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                         </div>
                                     </div>
                                 </li>
-                                <li class="swiper-slide card card-slide" data-aos="fade-up" data-aos-delay="1300">
-                                    <div class="card-body">
-                                        <div class="progress-widget">
-                                            <div id="circle-progress-07" class="text-center circle-progress-01 circle-progress circle-progress-primary" data-min-value="0" data-max-value="100" data-value="30" data-type="percent">
-                                                <svg class="card-slie-arrow icon-24 " width="24" viewBox="0 0 24 24">
-                                                    <path fill="currentColor" d="M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z" />
-                                                </svg>
-                                            </div>
-                                            <div class="progress-detail">
-                                                <p class="mb-2">Lifetime Customer</p>
-                                                <h4 class="counter"><?php echo $lifetimeCustomer; ?></h4>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </li>
                             </ul>
                             <div class="swiper-button swiper-button-next"></div>
                             <div class="swiper-button swiper-button-prev"></div>
@@ -728,10 +746,10 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                 <div class="flex-wrap card-header d-flex justify-content-between">
                                     <div class="header-title">
                                         <?php
-                                        $query = "SELECT COUNT(o.ID_ORDER) 
+                                        $query = "SELECT COUNT(o.ID_CUSTOMER) 
                                         FROM ORDERS o
                                         JOIN services s ON s.ID_SERVICE = o.ID_SERVICE
-                                        WHERE s.ID_FREELANCER = '1201' 
+                                        WHERE s.ID_FREELANCER = '$freelancerID' 
                                         AND MONTH(o.CREATED_AT) = MONTH(CURDATE()) 
                                         AND YEAR(o.CREATED_AT) = YEAR(CURDATE());";
                                         $result = mysqli_query($koneksi, $query);
@@ -808,7 +826,8 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                                                 ?>
                                                             </div>
                                                         </td>
-                                                        <td>Rp. <?php echo $row['TOTAL_AMOUNT'] ?></td>
+                                                        <?php $formatedprice = number_format($row['TOTAL_AMOUNT'], 0, '.', ',');?>
+                                                        <td>Rp. <?php echo $formatedprice ?></td>
                                                         <!-- <td>
                                                             <div class="mb-2 d-flex align-items-center">
                                                                 <h6>XX%</h6>
@@ -834,10 +853,10 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                             <div class="card" data-aos="fade-up" data-aos-delay="800">
                                 <div class="flex-wrap card-header d-flex justify-content-between align-items-center">
                                     <div class="header-title">
-                                        <h4 class="card-title">Rp<?php echo $income ?></h4>
+                                        <h4 class="card-title">Rp<?php echo $totalsales ?></h4>
                                         <p class="mb-0">Gross Sales</p>
                                     </div>
-                                    <div class="d-flex align-items-center align-self-center">
+                                    <!-- <div class="d-flex align-items-center align-self-center">
                                         <div class="d-flex align-items-center text-primary">
                                             <svg class="icon-12" xmlns="http://www.w3.org/2000/svg" width="12" viewBox="0 0 24 24" fill="currentColor">
                                                 <g>
@@ -858,7 +877,7 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                                 <span class="text-gray">Ordered</span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="dropdown">
                                         <a href="#" class="text-gray dropdown-toggle" id="dropdownMenuButton22" data-bs-toggle="dropdown" aria-expanded="false">
                                             by Earning
@@ -878,7 +897,8 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                 from orders o 
                                 join payments p on p.ID_PAYMENT = o.ID_PAYMENT
                                 join customers c on c.ID_CUSTOMER = o.ID_CUSTOMER 
-                                where p.STATUS = 1
+                                join services s on s.ID_SERVICE = o.ID_SERVICE
+                                where p.STATUS = 1 and s.ID_FREELANCER = '$freelancerID'
                                 group by month(o.CREATED_AT);";
                                 $result = mysqli_query($koneksi, $query);
 
@@ -889,11 +909,6 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                     $fullNames[] = $row['FULL_NAME'];
                                 }
 
-                                // echo "<pre>";
-                                // print_r($months);
-                                // print_r($totalAmounts);
-                                // print_r($fullNames);
-                                // echo "</pre>"
                                 ?>
                                 <div class="card-body">
                                     <!-- <div id="d-main" class="d-main"></div> -->
@@ -931,7 +946,7 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                         <h4 class="card-title">Rp<?php echo $income ?></h4>
                                         <p class="mb-0">Service Earning</p>
                                     </div>
-                                    <div class="d-flex align-items-center align-self-center">
+                                    <!-- <div class="d-flex align-items-center align-self-center">
                                         <div class="d-flex align-items-center text-primary">
                                             <svg class="icon-12" xmlns="http://www.w3.org/2000/svg" width="12" viewBox="0 0 24 24" fill="currentColor">
                                                 <g>
@@ -952,20 +967,25 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                                 <span class="text-gray">Sales</span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> -->
                                     <div class="dropdown">
                                         <a href="#" class="text-gray dropdown-toggle" id="dropdownMenuButton22" data-bs-toggle="dropdown" aria-expanded="false">
-                                            by Service
+                                            by Customer
                                         </a>
                                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton22">
                                             <li><a class="dropdown-item" href="#" data-value="earning">by Earning</a></li>
                                             <li><a class="dropdown-item" href="#" data-value="service">by Service</a></li>
-                                            <li><a class="dropdown-item" href="#" data-value="people">by People</a></li>
+                                            <li><a class="dropdown-item" href="#" data-value="people">by Customer</a></li>
                                         </ul>
                                     </div>
                                 </div>
                                 <?php
-                                $query = "SELECT c.FULL_NAME, COUNT(c.FULL_NAME) AS ORDERS FROM orders o JOIN payments p ON p.ID_PAYMENT = o.ID_PAYMENT JOIN customers c ON c.ID_CUSTOMER = o.ID_CUSTOMER WHERE p.STATUS = 1 GROUP BY c.FULL_NAME;";
+                                $query = "SELECT c.FULL_NAME, COUNT(c.FULL_NAME) AS ORDERS 
+                                FROM orders o JOIN payments p ON p.ID_PAYMENT = o.ID_PAYMENT 
+                                JOIN customers c ON c.ID_CUSTOMER = o.ID_CUSTOMER 
+                                join services s on s.ID_SERVICE = o.ID_SERVICE
+                                WHERE p.STATUS = 1 and s.ID_FREELANCER = '$freelancerID' 
+                                GROUP BY c.FULL_NAME;";
                                 $result = mysqli_query($koneksi, $query);
 
                                 $chartData = array();
@@ -1186,17 +1206,17 @@ $monthlyCustomer = mysqli_fetch_assoc($result)['MonthlyCustomers'];
                                                 </div>
                                             </div>
                                             <div class="ms-3">
-                                                <h5>81K</h5>
-                                                <small class="mb-0">Order Served</small>
+                                                <h5><?php echo $totalorders?></h5>
+                                                <small class="mb-0">Lifetime Order Served</small>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mb-4">
                                         <div class="flex-wrap d-flex justify-content-between">
-                                            <h2 class="mb-2">$405,012,300</h2>
-                                            <div>
+                                            <h2 class="mb-2">Rp.<?php echo $totalsales;?></h2>
+                                            <!-- <div>
                                                 <span class="badge bg-success rounded-pill">YoY 24%</span>
-                                            </div>
+                                            </div> -->
                                         </div>
                                         <p class="text-info">Life time sales</p>
                                     </div>

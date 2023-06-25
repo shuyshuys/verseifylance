@@ -16,6 +16,10 @@ WHERE u.ID_USER=" . $_SESSION['user']['ID_USER'] . "";
     $result = mysqli_query($koneksi, $query);
     $userLogin = mysqli_fetch_assoc($result);
 }
+
+$query = "SELECT count(ID_ORDER) FROM orders o JOIN payments p ON p.ID_PAYMENT = o.ID_PAYMENT where ID_CUSTOMER = 1101 and p.STATUS = 0";
+$result = mysqli_query($koneksi, $query);
+$orderCount = mysqli_fetch_assoc($result)['count(ID_ORDER)'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -180,7 +184,9 @@ WHERE u.ID_USER=" . $_SESSION['user']['ID_USER'] . "";
                                     if ($_SESSION['user']['ROLE'] == 'customers') {
                                     ?>
                                         <li class="nav-item">
-                                            <a class="nav-link" aria-current="page" href="./dashboard/app/billing" target="">My Orders</a>
+                                            <a class="nav-link" aria-current="page" href="./dashboard/app/billing" target="">
+                                                My Orders <?php echo ($orderCount > 0) ? "<span class='badge bg-warning'>$orderCount</span>" : ""; ?>
+                                            </a>
                                         </li>
                                     <?php } else { ?>
                                         <li class="nav-item">
@@ -257,7 +263,8 @@ WHERE u.ID_USER=" . $_SESSION['user']['ID_USER'] . "";
                                     <div class="card-body">
                                         <h5 class="card-title"><?php echo $serviceName; ?>.</h5>
                                         <p class="card-text"><?php echo $desc; ?>.</p>
-                                        <a href="./dashboard/app/orders?serviceID=<?php echo $serviceID; ?>" class="btn btn-primary">Rp.<?php echo $price ?></a>
+                                        <?php $formatedprice = number_format($price, 0, ',', '.');?>
+                                        <a href="./dashboard/app/orders?serviceID=<?php echo $serviceID; ?>" class="btn btn-primary">Rp.<?php echo $formatedprice ?></a>
                                     </div>
                                     <div class="card-footer text-muted">
 

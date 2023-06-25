@@ -2,6 +2,18 @@
 include "../../pages/auth/auth.php";
 include "../../pages/auth/koneksi.php";
 
+$userID = $_SESSION['user']['ID_USER'];
+
+$queryFreelancerID = "SELECT id_freelancer FROM freelancers WHERE id_user = '$userID'";
+$resultFreelancerID = mysqli_query($koneksi, $queryFreelancerID);
+$freelancerID = mysqli_fetch_assoc($resultFreelancerID)['id_freelancer'];
+
+$query = "SELECT FULL_NAME, SPECIALIZATION, PROFILE_PIC_URL FROM freelancers WHERE id_freelancer = '$freelancerID'";
+$result = mysqli_query($koneksi, $query);
+$freelancer = mysqli_fetch_assoc($result);
+$freelancerName = $freelancer['FULL_NAME'];
+$freelancerSpecialization = $freelancer['SPECIALIZATION'];
+
 $email = $_SESSION['user']['EMAIL'];
 
 $query = "SELECT u.USERNAME, u.EMAIL, u.ROLE, 
@@ -279,8 +291,8 @@ $skills = mysqli_fetch_all($result);
                                     <img src="../../assets/images/avatars/avtar_5.png" alt="User-Profile" class="theme-color-yellow-img img-fluid avatar avatar-50 avatar-rounded">
                                     <img src="../../assets/images/avatars/avtar_3.png" alt="User-Profile" class="theme-color-pink-img img-fluid avatar avatar-50 avatar-rounded">
                                     <div class="caption ms-3 d-none d-md-block ">
-                                        <h6 class="mb-0 caption-title">Austin Robertson</h6>
-                                        <p class="mb-0 caption-sub-title">Marketing Administrator</p>
+                                        <h6 class="mb-0 caption-title"><?php echo $freelancerName; ?></h6>
+                                        <p class="mb-0 caption-sub-title"><?php echo $freelancerSpecialization; ?></p>
                                     </div>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">

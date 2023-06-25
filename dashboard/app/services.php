@@ -575,16 +575,6 @@ if (isset($_GET['id_service'])) {
                         $desc = $row['description'];
                         $dayago = $row['dayago'];
                     ?>
-                        <!-- <div class="col-md-4">
-                                <div class="card mb-4">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><?php //echo $serviceName; 
-                                                                ?></h5>
-                                        <p class="card-text">Harga: $<?php //echo $price; 
-                                                                        ?></p>
-                                    </div>
-                                </div>
-                            </div> -->
                         <div class="col-md-4">
                             <div class="card mb-4">
                                 <div class="card-header">
@@ -593,7 +583,8 @@ if (isset($_GET['id_service'])) {
                                 <div class="card-body">
                                     <h5 class="card-title"><?php echo $serviceName; ?>.</h5>
                                     <p class="card-text"><?php echo $desc; ?>.</p>
-                                    <p class="card-text">Harga: <mark>Rp.<?php echo $price; ?>.</mark></p>
+                                    <?php $formatedprice = number_format($price, 0, ',', '.');?>
+                                    <p class="card-text">Price: <mark>Rp.<?php echo $formatedprice; ?>.</mark></p>
                                     <!-- <a href="#" class="btn btn-primary"></a> -->
                                     <!-- button edit -->
                                     <a href="edit-service?id=<?php echo $serviceid ?>" class="btn btn-warning">Edit</a>
