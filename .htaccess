@@ -4,7 +4,9 @@ ErrorDocument 404 /pages/errors/404.php
 ErrorDocument 500 /pages/errors/500.php
 
 # RewriteRule ^$ - [L]
-
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # Menghilangkan ekstensi .php pada URL
 # RewriteCond %{REQUEST_FILENAME} !-d
